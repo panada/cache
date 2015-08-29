@@ -25,8 +25,12 @@ class Dummy implements CacheInterface
      * @return void
      */
     public function setValue($key, $value, $expire = 0, $namespace = false)
-    {    
-        return self::_set($key, $value);
+    {
+        $key = $this->keyToNamespace($key, $namespace);
+        
+        self::$holder[$key] = $value;
+        
+        return true;
     }
     
     /**
@@ -38,9 +42,9 @@ class Dummy implements CacheInterface
      * @param int $expire
      * @return void
      */
-    public function addValue( $key, $value, $expire = 0, $namespace = false )
+    public function addValue($key, $value, $expire = 0, $namespace = false)
     {    
-        return self::_get($key) ? false : self::_set($key, $value);
+        return $this->getValue($key, $namespace) ? false : $this->setValue($key, $value, $expire, $namespace);
     }
     
     /**
@@ -51,9 +55,9 @@ class Dummy implements CacheInterface
      * @param int $expire
      * @return void
      */
-    public function updateValue( $key, $value, $expire = 0, $namespace = false )
+    public function updateValue( $key, $value, $expire = 0, $namespace = false)
     {    
-        return self::_set($key, $value);
+        return $this->setValue($key, $value, $expire, $namespace);
     }
     
     /**
@@ -61,34 +65,9 @@ class Dummy implements CacheInterface
      * @return mix
      */
     public function getValue($key, $namespace = false)
-    {    
-        return self::_get($key);
-    }
-    
-    /**
-     * @param string $key
-     * @return void
-     */
-    public function deleteValue($key, $namespace = false)
-    {    
-        return self::_delete($key);
-    }
-    
-    /**
-     * Flush all cached object.
-     * @return bool
-     */
-    public function flushValues()
-    {    
-        return self::_flush();
-    }
-    
-    /**
-     * @param string $key
-     * @return mix
-     */
-    public static function _get($key = false)
-    {    
+    {
+        $key = $this->keyToNamespace($key, $namespace);
+        
         if( isset(self::$holder[$key]) )
             return self::$holder[$key];
         
@@ -97,26 +76,25 @@ class Dummy implements CacheInterface
     
     /**
      * @param string $key
-     * @param mix
      * @return void
      */
-    public static function _set($key, $value)
-    {    
-        self::$holder[$key] = $value;
+    public function deleteValue($key, $namespace = false)
+    {
+        $key = $this->keyToNamespace($key, $namespace);
+        
+        unset(self::$holder[$key]);
+        
+        return true;
     }
     
     /**
-     * @param string $key
-     * @return void
+     * Flush all cached object.
+     * @return bool
      */
-    public static function _delete($key)
-    {    
-        unset(self::$holder[$key]);
-    }
-    
-    public static function _flush()
+    public function flushValues()
     {    
         unset(self::$holder);
+        
         return true;
     }
     
@@ -148,5 +126,24 @@ class Dummy implements CacheInterface
         $this->updateValue($key, $decr);
         
         return $decr;
+    }
+    
+    /**
+     * Namespace usefull when we need to wildcard deleting cache object.
+     *
+     * @param string $namespaceKey
+     * @return int Unixtimestamp
+     */
+    private function keyToNamespace($key, $namespaceKey = false)
+    {
+        if( ! $namespaceKey )
+            return $key;
+        
+        if( ! $namespaceValue = $this->getValue($namespaceKey) ){
+            $namespaceValue = mt_rand();
+            $this->setValue($namespaceKey, $namespaceValue, 0);
+        }
+	
+        return $namespaceValue.$key;
     }
 }

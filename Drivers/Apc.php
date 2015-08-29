@@ -59,6 +59,7 @@ class Apc implements Interfaces\Cache
     public function setValue( $key, $value, $expire = 0, $namespace = false )
     {    
         $key = $this->keyToNamespace($key, $namespace);
+        
         return apc_store($key, $value, $expire); 
     }
     
@@ -74,6 +75,7 @@ class Apc implements Interfaces\Cache
     public function addValue( $key, $value, $expire = 0, $namespace = false )
     {    
         $key = $this->keyToNamespace($key, $namespace);
+        
         return apc_add($key, $value, $expire);
     }
     
@@ -88,6 +90,7 @@ class Apc implements Interfaces\Cache
     public function updateValue( $key, $value, $expire = 0, $namespace = false )
     {    
         $key = $this->keyToNamespace($key, $namespace);
+        
         return $this->setValue($key, $value, $expire);
     }
     
@@ -98,6 +101,7 @@ class Apc implements Interfaces\Cache
     public function getValue( $key, $namespace = false )
     {    
         $key = $this->keyToNamespace($key, $namespace);
+        
         return apc_fetch($key); 
     }
     
@@ -108,6 +112,7 @@ class Apc implements Interfaces\Cache
     public function deleteValue( $key, $namespace = false )
     {    
         $key = $this->keyToNamespace($key, $namespace);
+        
         return apc_delete($key);
     }
     
@@ -128,7 +133,7 @@ class Apc implements Interfaces\Cache
      */
     public function incrementBy($key, $offset = 1)
     {
-	return apc_inc($key, $offset);
+        return apc_inc($key, $offset);
     }
     
     /**
@@ -139,7 +144,7 @@ class Apc implements Interfaces\Cache
      */
     public function decrementBy($key, $offset = 1)
     {
-	return apc_dec($key, $offset);
+        return apc_dec($key, $offset);
     }
     
     /**
@@ -150,14 +155,14 @@ class Apc implements Interfaces\Cache
      */
     private function keyToNamespace( $key, $namespaceKey = false )
     {
-	if( ! $namespaceKey )
-	    return $key;
+        if( ! $namespaceKey )
+            return $key;
+        
+        if( ! $namespaceValue = apc_fetch($namespaceKey) ){
+            $namespaceValue = time();
+            apc_store($namespaceKey, $namespaceValue, 0);
+        }
 	
-	if( ! $namespaceValue = apc_fetch($namespaceKey) ){
-	    $namespaceValue = time();
-	    apc_store($namespaceKey, $namespaceValue, 0);
-	}
-	
-	return $namespaceValue.'_'.$key;
+        return $namespaceValue.'_'.$key;
     }
 }

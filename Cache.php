@@ -92,5 +92,4 @@ class Cache
     {    
         $this->driver->$name = $value;
     }
-    
 }
