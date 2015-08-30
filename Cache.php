@@ -16,7 +16,7 @@ class Cache
     private $driver;
     protected static $instance = [];
     private $config = [
-        'driver' => 'dummy'
+        'driver' => 'apc'
     ];
     
     public function __construct($config = [])

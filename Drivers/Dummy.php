@@ -11,7 +11,8 @@ use Panada\Cache\CacheInterface;
  *
  * @package Driver
  * @subpackage	Cache
- * @author	Iskandar Soesman
+ * @license http://opensource.org/licenses/MIT
+ * @author	Iskandar Soesman <k4ndar@yahoo.com>
  * @since	Version 0.3
  */
 class Dummy implements CacheInterface

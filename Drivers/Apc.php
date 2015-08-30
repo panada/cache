@@ -1,29 +1,30 @@
 <?php
+
+namespace Panada\Cache\Drivers;
+
+use Panada\Cache\CacheInterface;
+
 /**
  * Panada APC API Driver.
  *
  * @package	Driver
  * @subpackage	Cache
- * @author	Iskandar Soesman
+ * @license http://opensource.org/licenses/MIT
+ * @author	Iskandar Soesman <k4ndar@yahoo.com>
  * @since	Version 0.2
  *
  * Install APC on Ubuntu: aptitude install libpcre3-dev;
  * pecl install apc
  */
-namespace Drivers\Cache;
-use
-    Resources\Interfaces as Interfaces,
-    Resources\RunException as RunException;
-    
-class Apc implements Interfaces\Cache
+class Apc implements CacheInterface
 {    
     public function __construct()
     {    
         /**
         * Makesure APC extension is enabled
         */
-       if( ! extension_loaded('apc') )
-           throw new RunException('APC extension that required by APC Driver is not available.');
+       if(! extension_loaded('apc'))
+           throw new \Exception('APC extension that required by APC Driver is not available.');
     }
     
     /**
@@ -56,7 +57,7 @@ class Apc implements Interfaces\Cache
      * @param int $expire
      * @return void
      */
-    public function setValue( $key, $value, $expire = 0, $namespace = false )
+    public function setValue($key, $value, $expire = 0, $namespace = false)
     {    
         $key = $this->keyToNamespace($key, $namespace);
         
@@ -133,7 +134,16 @@ class Apc implements Interfaces\Cache
      */
     public function incrementBy($key, $offset = 1)
     {
-        return apc_inc($key, $offset);
+        if(! apc_exists($key)){
+            if(! apc_store($key, 0)){
+                return false;
+            }
+            
+            return apc_inc($key, $offset);
+        }
+        else {
+            return apc_inc($key, $offset);
+        }
     }
     
     /**
@@ -159,10 +169,10 @@ class Apc implements Interfaces\Cache
             return $key;
         
         if( ! $namespaceValue = apc_fetch($namespaceKey) ){
-            $namespaceValue = time();
+            $namespaceValue = mt_rand();
             apc_store($namespaceKey, $namespaceValue, 0);
         }
 	
-        return $namespaceValue.'_'.$key;
+        return $namespaceValue.$key;
     }
 }
