@@ -53,4 +53,16 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(false, $this->cache->getValue($key1, $namespace));
         $this->assertEquals(false, $this->cache->getValue($key2, $namespace));
     }
+	
+	public function testDriverSpecified()
+	{
+		switch($this->cache->config['driver']) {
+			case 'apc':
+				$this->assertArrayHasKey('stime', $this->cache->apc_cache_info());
+				break;
+			case 'redis':
+				$this->assertArrayHasKey('redis_version', $this->cache->info());
+				break;
+		}
+	}
 }

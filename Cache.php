@@ -17,7 +17,7 @@ class Cache
     
     private $DIObject;
     protected static $instance = [];
-    private $config = [
+    public $config = [
         'driver' => 'dummy'
     ];
     
