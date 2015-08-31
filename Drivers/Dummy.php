@@ -3,20 +3,22 @@
 namespace Panada\Cache\Drivers;
 
 use Panada\Cache\CacheInterface;
+use Panada\Cache\CacheTrait;
 
 /**
  * Panada Local Memory Cacher.
  * This class useful when you calling an object twice or
  * more in a single run time.
  *
- * @package Driver
- * @subpackage	Cache
+ * @package Cache
  * @license http://opensource.org/licenses/MIT
  * @author	Iskandar Soesman <k4ndar@yahoo.com>
  * @since	Version 0.3
  */
 class Dummy implements CacheInterface
-{    
+{
+    use CacheTrait;
+    
     static private $holder = [];
     
     /**
@@ -127,24 +129,5 @@ class Dummy implements CacheInterface
         $this->updateValue($key, $decr);
         
         return $decr;
-    }
-    
-    /**
-     * Namespace usefull when we need to wildcard deleting cache object.
-     *
-     * @param string $namespaceKey
-     * @return int Unixtimestamp
-     */
-    private function keyToNamespace($key, $namespaceKey = false)
-    {
-        if( ! $namespaceKey )
-            return $key;
-        
-        if( ! $namespaceValue = $this->getValue($namespaceKey) ){
-            $namespaceValue = mt_rand();
-            $this->setValue($namespaceKey, $namespaceValue, 0);
-        }
-	
-        return $namespaceValue.$key;
     }
 }

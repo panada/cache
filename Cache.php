@@ -12,11 +12,13 @@ namespace Panada\Cache;
  * @since	Version 0.3
  */
 class Cache
-{    
-    private $driver;
+{
+    use CacheDI;
+    
+    private $DIObject;
     protected static $instance = [];
     private $config = [
-        'driver' => 'apc'
+        'driver' => 'dummy'
     ];
     
     public function __construct($config = [])
@@ -55,41 +57,6 @@ class Cache
     private function init()
     {
         $driverNamespace = 'Panada\Cache\Drivers\\' . ucwords($this->config['driver']);
-        $this->driver = new $driverNamespace($this->config);
-    }
-    
-    /**
-     * Use magic method 'call' to pass user method
-     * into driver method
-     *
-     * @param string @name
-     * @param array @arguments
-     */
-    public function __call($name, $arguments)
-    {    
-        return call_user_func_array([$this->driver, $name], $arguments);
-    }
-    
-    /**
-     * PHP Magic method for calling a class property dinamicly
-     * 
-     * @param string $name
-     * @return mix
-     */
-    public function __get($name)
-    {    
-        return $this->driver->$name;
-    }
-    
-    /**
-     * PHP Magic method for set a class property dinamicly
-     * 
-     * @param string $name
-     * @param mix $value
-     * @return void
-     */
-    public function __set($name, $value)
-    {    
-        $this->driver->$name = $value;
+        $this->DIObject = new $driverNamespace($this->config);
     }
 }

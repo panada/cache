@@ -1,42 +1,71 @@
 <?php
+
+namespace Panada\Cache\Drivers;
+
+use Panada\Cache\CacheInterface;
+use Panada\Cache\CacheTrait;
+use Panada\Cache\CacheDI;
+
 /**
  * Panada Redis API Driver.
  *
- * @package	Driver
- * @subpackage	Cache
- * @author	Iskandar Soesman
+ * @package	Cache
+ * @license http://opensource.org/licenses/MIT
+ * @author	Iskandar Soesman <k4ndar@yahoo.com>
  * @since	Version 1.0
  */
 
 /**
- * Makesure Memcache extension is enabled
+ * Make sure Redis extension is enabled
  */
-namespace Drivers\Cache;
-use
-    Resources,
-    Resources\Interfaces as Interfaces;
-
-class Redis extends \Redis implements Interfaces\Cache
-{    
-    private $port = 6379;
-    
-    public function __construct( $config )
-    {
-	if( ! extension_loaded('redis') )
-	    die('Redis extension that required by Driver Redis is not available.');
+class Redis implements CacheInterface
+{
+	use CacheTrait;
+	use CacheDI;
 	
-        parent::__construct();
-        
-        foreach($config['server'] as $server)
-            if ( $server['persistent'])
-                $this->pconnect($server['host'], $server['port'], $server['timeout']);
-            else
-                $this->connect($server['host'], $server['port'], $server['timeout']);
-
-	if(isset($config['password']) && $config['password'])
-	    $this->auth($config['password']);
-    }
+	private $config = [
+        'host' => 'localhost',
+        'port' => 6379,
+        'persistentId' => false, // or set a string as persistent id
+		'reserved' => null,
+		'retryInterval' => 0,
+        'timeout' => 0,
+		'password' => null
+    ];
+	
+	private $DIObject;
     
+    public function __construct($config = [])
+    {
+		if(! extension_loaded('redis'))
+			throw new \Exception('Redis extension that required by Driver Redis is not available.');
+		
+		$this->DIObject = new \Redis;
+		
+		$this->config = array_merge($this->config, $config);
+			
+		if ($this->config['persistentId']){
+			$this->DIObject->pconnect(
+				$this->config['host'],
+				$this->config['port'],
+				$this->config['timeout'],
+				$this->config['persistentId'],
+				$this->config['retryInterval']
+			);
+		}
+		else{
+			$this->DIObject->connect(
+				$this->config['host'],
+				$this->config['port'],
+				$this->config['timeout'],
+				$this->config['reserved'],
+				$this->config['retryInterval']
+			);
+		}
+	
+		$this->auth($this->config['password']);
+	}
+	
     /**
      * @param string $key
      * @param mix $value
@@ -46,14 +75,10 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function setValue( $key, $value, $expire = 0, $namespace = false )
     {
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+		$key = $this->keyToNamespace($key, $namespace);
+        $return = $this->DIObject->set($key, $value, $expire);
 	
-	$key = $this->keyToNamespace($key, $namespace);
-        $return = $this->set($key, $value, $expire);
-	
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-	
-	return $return;
+		return $return;
     }
     
     /**
@@ -68,14 +93,11 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function addValue( $key, $value, $expire = 0, $namespace = false )
     {
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+		
+		$key = $this->keyToNamespace($key, $namespace);
+		$return = $this->DIObject->setnx($key, $value, $expire);
 	
-	$key = $this->keyToNamespace($key, $namespace);
-	$return = $this->setnx($key, $value, $expire);
-	
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-	
-	return $return;
+		return $return;
     }
     
     /**
@@ -89,14 +111,11 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function updateValue( $key, $value, $expire = 0, $namespace = false )
     {
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
 	
-	$key = $this->keyToNamespace($key, $namespace);
-	$return = $this->setValue($key, $value, $expire);
-    
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
+		$key = $this->keyToNamespace($key, $namespace);
+		$return = $this->DIObject->set($key, $value, $expire);
 	
-	return $return;
+		return $return;
     }
     
     /**
@@ -104,16 +123,12 @@ class Redis extends \Redis implements Interfaces\Cache
      * @param string $namespace
      * @return mix
      */
-    public function getValue( $key, $namespace = false )
+    public function getValue($key, $namespace = false)
     {
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_PHP);
+		$key = $this->keyToNamespace($key, $namespace);
+        $return = $this->DIObject->get($key);
 	
-	$key = $this->keyToNamespace($key, $namespace);
-        $return = $this->get($key);
-	
-	$this->setOption(\Redis::OPT_SERIALIZER, \Redis::SERIALIZER_NONE);
-	
-	return $return;
+		return $return;
     }
     
     /**
@@ -121,10 +136,11 @@ class Redis extends \Redis implements Interfaces\Cache
      * @param string $namespace
      * @return void
      */
-    public function deleteValue( $key, $namespace = false )
+    public function deleteValue( $key, $namespace = false)
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-        return $this->delete($key);
+		$key = $this->keyToNamespace($key, $namespace);
+		
+        return $this->DIObject->delete($key);
     }
     
     /**
@@ -133,7 +149,7 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function flushValues()
     {    
-	return $this->flushDB();
+		return $this->DIObject->flushDB();
     }
     
     /**
@@ -144,7 +160,7 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function incrementBy($key, $offset = 1)
     {
-	return $this->incr($key, $offset);
+		return $this->DIObject->incr($key, $offset);
     }
     
     /**
@@ -155,26 +171,6 @@ class Redis extends \Redis implements Interfaces\Cache
      */
     public function decrementBy($key, $offset = 1)
     {
-	return $this->decr($key, $offset);
+		return $this->DIObject->decr($key, $offset);
     }
-    
-    /**
-     * Namespace usefull when we need to wildcard deleting cache object.
-     *
-     * @param string $namespaceKey
-     * @return int Unixtimestamp
-     */
-    private function keyToNamespace( $key, $namespaceKey = false )
-    {
-	if( ! $namespaceKey )
-	    return $key;
-	
-	if( ! $namespaceValue = $this->get($namespaceKey) ){
-	    $namespaceValue = time();
-	    $this->set($namespaceKey, $namespaceValue, 0);
-	}
-	
-	return $namespaceValue.'_'.$key;
-    }
-    
 }

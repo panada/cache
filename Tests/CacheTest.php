@@ -9,6 +9,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
     public function __construct()
     {
         $this->cache = new Cache;
+		$this->cache->deleteValue('counter');
     }
     
     public function testBasicCRUD()
@@ -17,11 +18,11 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $val = 'bar';
         $val2 = 'bar2';
         
-        $this->assertTrue($this->cache->setValue($key, $val));
+        $this->assertTrue( (boolean) $this->cache->setValue($key, $val));
         $this->assertEquals($val, $this->cache->getValue($key));
-        $this->assertTrue($this->cache->updateValue($key, $val2));
+        $this->assertTrue( (boolean) $this->cache->updateValue($key, $val2));
         $this->assertEquals($val2, $this->cache->getValue($key));
-        $this->assertTrue($this->cache->deleteValue($key));
+        $this->assertTrue( (boolean) $this->cache->deleteValue($key));
         $this->assertEquals(false, $this->cache->getValue($key));
     }
     
@@ -47,7 +48,7 @@ class CacheTest extends \PHPUnit_Framework_TestCase
         $this->cache->setValue($key2, $val2, 0, $namespace);
         $this->assertEquals($val2, $this->cache->getValue($key2, $namespace));
         
-        $this->assertTrue($this->cache->deleteValue($namespace));
+        $this->assertTrue( (boolean) $this->cache->deleteValue($namespace));
         
         $this->assertEquals(false, $this->cache->getValue($key1, $namespace));
         $this->assertEquals(false, $this->cache->getValue($key2, $namespace));

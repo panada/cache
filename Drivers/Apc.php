@@ -3,12 +3,12 @@
 namespace Panada\Cache\Drivers;
 
 use Panada\Cache\CacheInterface;
+use Panada\Cache\CacheTrait;
 
 /**
  * Panada APC API Driver.
  *
- * @package	Driver
- * @subpackage	Cache
+ * @package	Cache
  * @license http://opensource.org/licenses/MIT
  * @author	Iskandar Soesman <k4ndar@yahoo.com>
  * @since	Version 0.2
@@ -17,7 +17,9 @@ use Panada\Cache\CacheInterface;
  * pecl install apc
  */
 class Apc implements CacheInterface
-{    
+{
+    use CacheTrait;
+    
     public function __construct()
     {    
         /**
@@ -28,7 +30,7 @@ class Apc implements CacheInterface
     }
     
     /**
-     * PHP Magic method for calling a method dinamicly
+     * DI method for calling APC function dinamicly
      * 
      * @param string $name
      * @param mix $arguments
@@ -155,24 +157,5 @@ class Apc implements CacheInterface
     public function decrementBy($key, $offset = 1)
     {
         return apc_dec($key, $offset);
-    }
-    
-    /**
-     * Namespace usefull when we need to wildcard deleting cache object.
-     *
-     * @param string $namespaceKey
-     * @return int Unixtimestamp
-     */
-    private function keyToNamespace( $key, $namespaceKey = false )
-    {
-        if( ! $namespaceKey )
-            return $key;
-        
-        if( ! $namespaceValue = apc_fetch($namespaceKey) ){
-            $namespaceValue = mt_rand();
-            apc_store($namespaceKey, $namespaceValue, 0);
-        }
-	
-        return $namespaceValue.$key;
     }
 }
