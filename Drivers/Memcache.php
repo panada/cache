@@ -1,43 +1,60 @@
 <?php
+
+namespace Panada\Cache\Drivers;
+
+use Panada\Cache\CacheInterface;
+use Panada\Cache\CacheTrait;
+use Panada\Cache\CacheDI;
+
 /**
- * Panada Memcached API Driver.
+ * Panada Memcache API Driver.
  *
- * @package	Driver
- * @subpackage	Cache
- * @author	Iskandar Soesman
- * @since	Version 0.1
+ * @package	Cache
+ * @license http://opensource.org/licenses/MIT
+ * @author	Iskandar Soesman <k4ndar@yahoo.com>
+ * @since	Version 1.0
  */
-
-/**
- * Makesure Memcache extension is enabled
- */
-namespace Drivers\Cache;
-use
-    Resources\Interfaces as Interfaces,
-    Resources\RunException as RunException;
-
-class Memcache extends \Memcache implements Interfaces\Cache
-{    
-    private $port = 11211;
+class Memcache implements CacheInterface
+{
+	use CacheTrait;
+	use CacheDI;
+	
+    protected $config = [
+        'server' => [
+            [
+                'host' => 'localhost',
+                'port' => 11211,
+                'persistent' => false,
+				'compressThreshold' => [20000, 0.2],
+				'saslAuthData' => [false, false]
+            ],
+        ]
+	];
+	
+	protected $DIObject;
     
     /**
      * Load configuration from config file.
      * @return void
      */
     
-    public function __construct( $config )
+    public function __construct($config = [])
     {
-	if( ! extension_loaded('memcache') )
-	    throw new RunException('Memcache extension that required by Memcache Driver is not available.');
-        
-        foreach($config['server'] as $server)
-	    $this->addServer($server['host'], $server['port'], $server['persistent']);
-	
-	/**
-	 * If you need compression Threshold, you can uncomment this
-	 */
-	//$this->setCompressThreshold(20000, 0.2);
+		$this->init($config);
     }
+	
+	protected function init($config)
+	{
+		if( !extension_loaded('memcache'))
+			throw new \Exception('Memcache extension that required by Memcache Driver is not available.');
+		
+		$this->DIObject = new \Memcache;
+		
+		foreach($config['server'] as $server) {
+			$this->DIObject->addServer($server['host'], $server['port'], $server['persistent']);
+			$this->DIObject->setCompressThreshold($server['compressThreshold'][0], $server['compressThreshold'][1]);
+		}
+	}
     
     /**
      * @param string $key
@@ -48,8 +65,9 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function setValue( $key, $value, $expire = 0, $namespace = false )
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-        return $this->set($key, $value, 0, $expire);
+		$key = $this->keyToNamespace($key, $namespace);
+        
+		return $this->DIObject->set($key, $value, 0, $expire);
     }
     
     /**
@@ -64,8 +82,9 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function addValue( $key, $value, $expire = 0, $namespace = false )
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-	return $this->add($key, $value, 0, $expire); 
+		$key = $this->keyToNamespace($key, $namespace);
+		
+		return $this->DIObject->add($key, $value, 0, $expire); 
     }
     
     /**
@@ -79,8 +98,9 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function updateValue( $key, $value, $expire = 0, $namespace = false )
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-	return $this->replace($key, $value, 0, $expire);
+		$key = $this->keyToNamespace($key, $namespace);
+		
+		return $this->DIObject->replace($key, $value, 0, $expire);
     }
     
     /**
@@ -90,8 +110,9 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function getValue( $key, $namespace = false )
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-        return $this->get($key);
+		$key = $this->keyToNamespace($key, $namespace);
+        
+		return $this->DIObject->get($key);
     }
     
     /**
@@ -101,8 +122,9 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function deleteValue( $key, $namespace = false )
     {    
-	$key = $this->keyToNamespace($key, $namespace);
-        return $this->delete($key);
+		$key = $this->keyToNamespace($key, $namespace);
+		
+        return $this->DIObject->delete($key);
     }
     
     /**
@@ -111,7 +133,7 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function flushValues()
     {    
-	return $this->flush();
+		return $this->DIObject->flush();
     }
     
     /**
@@ -122,7 +144,7 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function incrementBy($key, $offset = 1)
     {
-	return $this->increment($key, $offset);
+		return $this->DIObject->increment($key, $offset);
     }
     
     /**
@@ -133,26 +155,6 @@ class Memcache extends \Memcache implements Interfaces\Cache
      */
     public function decrementBy($key, $offset = 1)
     {
-	return $this->decrement($key, $offset);
+		return $this->DIObject->decrement($key, $offset);
     }
-    
-    /**
-     * Namespace usefull when we need to wildcard deleting cache object.
-     *
-     * @param string $namespaceKey
-     * @return int Unixtimestamp
-     */
-    private function keyToNamespace( $key, $namespaceKey = false )
-    {
-	if( ! $namespaceKey )
-	    return $key;
-	
-	if( ! $namespaceValue = $this->get($namespaceKey) ){
-	    $namespaceValue = time();
-	    $this->set($namespaceKey, $namespaceValue, 0, 0);
-	}
-	
-	return $namespaceValue.'_'.$key;
-    }
-    
 }
