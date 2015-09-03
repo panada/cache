@@ -48,9 +48,10 @@ class Memcache implements CacheInterface
 		if( !extension_loaded('memcache'))
 			throw new \Exception('Memcache extension that required by Memcache Driver is not available.');
 		
-		$this->DIObject = new \Memcache;
+		$this->DIObject	= new \Memcache;
+		$this->config	= array_merge($this->config, $config);
 		
-		foreach($config['server'] as $server) {
+		foreach($this->config['server'] as $server) {
 			$this->DIObject->addServer($server['host'], $server['port'], $server['persistent']);
 			$this->DIObject->setCompressThreshold($server['compressThreshold'][0], $server['compressThreshold'][1]);
 		}
@@ -144,6 +145,8 @@ class Memcache implements CacheInterface
      */
     public function incrementBy($key, $offset = 1)
     {
+		$this->DIObject->add($key, 0);
+		
 		return $this->DIObject->increment($key, $offset);
     }
     

@@ -23,8 +23,9 @@ class Memcached extends Memcache
 			throw new \Exception('Memcached extension that required by Driver memcached is not available.');
         
 		$this->DIObject = new \Memcached;
+		$this->config	= array_merge($this->config, $config);
 		
-        foreach($config['server'] as $server){
+        foreach($this->config['server'] as $server){
 			$this->DIObject->addServer($server['host'], $server['port'], $server['persistent']);
 		}
 	}

@@ -63,6 +63,12 @@ class CacheTest extends \PHPUnit_Framework_TestCase
 			case 'redis':
 				$this->assertArrayHasKey('redis_version', $this->cache->info());
 				break;
+			case 'memcache':
+				$this->assertArrayHasKey('version', $this->cache->getStats());
+				break;
+			case 'memcached':
+				$this->assertArrayHasKey('localhost:11211', $this->cache->getStats());
+				break;
 		}
 	}
 }
